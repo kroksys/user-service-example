@@ -1,0 +1,19 @@
+version: "3.8"
+
+services:
+
+  db:
+    # Since I'm using Apple silicon M1 chip I need arm/v8 build. 
+    # mysql:8-oracle has arm64/v8 build so I chose this one.
+    image: mysql:8-oracle
+    platform: linux/arm64/v8
+    restart: always
+    volumes:
+      - "./.mysql-data/db:/var/lib/mysql"
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpw
+      MYSQL_DATABASE: users
+      MYSQL_USER: user
+      MYSQL_PASSWORD: userpw
+    ports:
+      - 3306:3306

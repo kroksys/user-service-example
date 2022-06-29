@@ -8,3 +8,7 @@ desktop.ini
 
 # IDE
 .vscode
+
+# Project specific
+.mysql-data
+notes.txt
