@@ -1,0 +1,22 @@
+version: v1
+plugins:
+  # go structs for protocol buffer
+  - remote: buf.build/library/plugins/go:v1.27.1-1
+    out: pkg/pb/v1
+    opt: paths=source_relative
+  # gRPC stubs in golang
+  - remote: buf.build/library/plugins/go-grpc:v1.1.0-2
+    out: pkg/pb/v1
+    opt: 
+      - paths=source_relative
+      - require_unimplemented_servers=false
+  # gRPC to HTTP API server
+  - remote: buf.build/grpc-ecosystem/plugins/grpc-gateway:v2.6.0-1
+    out: pkg/pb/v1
+    opt: paths=source_relative
+  # OpenAPI documentation
+  - remote: buf.build/grpc-ecosystem/plugins/openapiv2:v2.6.0-1
+    out: pkg/pb/v1
+    opt:
+      - allow_merge=true
+      - merge_file_name=user

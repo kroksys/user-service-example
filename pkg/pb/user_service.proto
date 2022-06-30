@@ -1,0 +1,86 @@
+syntax = "proto3";
+
+package user.v1;
+
+import "google/api/annotations.proto";
+import "google/api/field_behavior.proto";
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/kroksys/user-service-example/pb/v1;pb";
+
+service UserService {
+
+  rpc AddUser(AddUserRequest) returns (UserResponse) {
+    option (google.api.http) = {
+      post: "/v1/users"
+      body: "*"
+    };
+  }
+
+  rpc ModifyUser(ModifyUserRequest) returns (UserResponse) {
+    option (google.api.http) = {
+      put: "/v1/users/{id}"
+      body: "*"
+    };
+  }
+
+  rpc RemoveUser(RemoveUserRequest) returns (RemoveUserResponse) {
+    option (google.api.http) = {
+      delete: "/v1/users/{id}"
+    };
+  }
+
+  rpc ListUsers(ListUsersRequest) returns (ListUsersResponse) {
+    option (google.api.http) = {
+      get: "/v1/users"
+    };
+  }
+
+}
+
+message AddUserRequest {
+  string firstName = 1 [json_name="first_name"];
+  string lastName = 2 [json_name="last_name"];
+  string nickname = 3;
+  string password = 4;
+  string email = 5;
+  string country = 6;
+}
+
+message ModifyUserRequest {
+  string id = 1 [(google.api.field_behavior) = REQUIRED];
+  optional string firstName = 2 [json_name="first_name"];
+  optional string lastName = 3 [json_name="last_name"];
+  optional string nickname = 4;
+  optional string password = 5;
+  optional string email = 6;
+  optional string country = 7;
+}
+
+message RemoveUserRequest {
+  string id = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
+message RemoveUserResponse {}
+
+message ListUsersRequest {
+  string country = 1;
+  optional int32 limit = 2;
+  optional int32 offset = 3;
+}
+
+message UserResponse {
+    string id = 1;
+    string firstName = 2 [json_name="first_name"];
+    string lastName = 3 [json_name="last_name"];
+    string nickname = 4;
+    string password = 5;
+    string email = 6;
+    string country = 7;
+    google.protobuf.Timestamp createdAt = 8 [json_name="created_at"];
+    google.protobuf.Timestamp updatedAt = 9 [json_name="updated_at"];
+}
+
+message ListUsersResponse {
+  repeated UserResponse users = 1;
+}

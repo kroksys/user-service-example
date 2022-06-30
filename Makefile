@@ -4,4 +4,8 @@ up:
 down:
 	docker-compose down --remove-orphans
 
-.Phony: up down
+gen:
+	buf mod update pkg/pb  
+	buf generate pkg/pb
+
+.Phony: up down gen
