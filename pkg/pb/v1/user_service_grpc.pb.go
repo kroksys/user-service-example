@@ -18,10 +18,19 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type UserServiceClient interface {
+	// Creates new user from provided data
 	AddUser(ctx context.Context, in *AddUserRequest, opts ...grpc.CallOption) (*UserResponse, error)
+	// Modify existing user. Only required field is "id", but other fields are
+	// optional and will be updated only if they have been provided.
 	ModifyUser(ctx context.Context, in *ModifyUserRequest, opts ...grpc.CallOption) (*UserResponse, error)
+	// Removes user from database by provided "id"
 	RemoveUser(ctx context.Context, in *RemoveUserRequest, opts ...grpc.CallOption) (*RemoveUserResponse, error)
+	// List users. Data can be filtered using Limit, Offset and Country.
 	ListUsers(ctx context.Context, in *ListUsersRequest, opts ...grpc.CallOption) (*ListUsersResponse, error)
+	// Performs a watch for the users. Each response will hold
+	// method: CREATE, UPDATE or DELETE that represents an action that
+	// have been taken for specific user data.
+	Watch(ctx context.Context, in *WatchRequest, opts ...grpc.CallOption) (*WatchResponse, error)
 }
 
 type userServiceClient struct {
@@ -68,14 +77,32 @@ func (c *userServiceClient) ListUsers(ctx context.Context, in *ListUsersRequest,
 	return out, nil
 }
 
+func (c *userServiceClient) Watch(ctx context.Context, in *WatchRequest, opts ...grpc.CallOption) (*WatchResponse, error) {
+	out := new(WatchResponse)
+	err := c.cc.Invoke(ctx, "/user.v1.UserService/Watch", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // UserServiceServer is the server API for UserService service.
 // All implementations should embed UnimplementedUserServiceServer
 // for forward compatibility
 type UserServiceServer interface {
+	// Creates new user from provided data
 	AddUser(context.Context, *AddUserRequest) (*UserResponse, error)
+	// Modify existing user. Only required field is "id", but other fields are
+	// optional and will be updated only if they have been provided.
 	ModifyUser(context.Context, *ModifyUserRequest) (*UserResponse, error)
+	// Removes user from database by provided "id"
 	RemoveUser(context.Context, *RemoveUserRequest) (*RemoveUserResponse, error)
+	// List users. Data can be filtered using Limit, Offset and Country.
 	ListUsers(context.Context, *ListUsersRequest) (*ListUsersResponse, error)
+	// Performs a watch for the users. Each response will hold
+	// method: CREATE, UPDATE or DELETE that represents an action that
+	// have been taken for specific user data.
+	Watch(context.Context, *WatchRequest) (*WatchResponse, error)
 }
 
 // UnimplementedUserServiceServer should be embedded to have forward compatible implementations.
@@ -93,6 +120,9 @@ func (UnimplementedUserServiceServer) RemoveUser(context.Context, *RemoveUserReq
 }
 func (UnimplementedUserServiceServer) ListUsers(context.Context, *ListUsersRequest) (*ListUsersResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListUsers not implemented")
+}
+func (UnimplementedUserServiceServer) Watch(context.Context, *WatchRequest) (*WatchResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Watch not implemented")
 }
 
 // UnsafeUserServiceServer may be embedded to opt out of forward compatibility for this service.
@@ -178,6 +208,24 @@ func _UserService_ListUsers_Handler(srv interface{}, ctx context.Context, dec fu
 	return interceptor(ctx, in, info, handler)
 }
 
+func _UserService_Watch_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(WatchRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).Watch(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/user.v1.UserService/Watch",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).Watch(ctx, req.(*WatchRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // UserService_ServiceDesc is the grpc.ServiceDesc for UserService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -200,6 +248,10 @@ var UserService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ListUsers",
 			Handler:    _UserService_ListUsers_Handler,
+		},
+		{
+			MethodName: "Watch",
+			Handler:    _UserService_Watch_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

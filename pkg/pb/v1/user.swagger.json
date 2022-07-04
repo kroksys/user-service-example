@@ -18,6 +18,7 @@
   "paths": {
     "/v1/users": {
       "get": {
+        "summary": "List users. Data can be filtered using Limit, Offset and Country.",
         "operationId": "UserService_ListUsers",
         "responses": {
           "200": {
@@ -60,6 +61,7 @@
         ]
       },
       "post": {
+        "summary": "Creates new user from provided data",
         "operationId": "UserService_AddUser",
         "responses": {
           "200": {
@@ -92,6 +94,7 @@
     },
     "/v1/users/{id}": {
       "delete": {
+        "summary": "Removes user from database by provided \"id\"",
         "operationId": "UserService_RemoveUser",
         "responses": {
           "200": {
@@ -120,6 +123,7 @@
         ]
       },
       "put": {
+        "summary": "Modify existing user. Only required field is \"id\", but other fields are \noptional and will be updated only if they have been provided.",
         "operationId": "UserService_ModifyUser",
         "responses": {
           "200": {
@@ -175,9 +179,41 @@
           "UserService"
         ]
       }
+    },
+    "/v1/watch": {
+      "get": {
+        "summary": "Performs a watch for the users. Each response will hold \nmethod: CREATE, UPDATE or DELETE that represents an action that\nhave been taken for specific user data.",
+        "operationId": "UserService_Watch",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1WatchResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "tags": [
+          "UserService"
+        ]
+      }
     }
   },
   "definitions": {
+    "WatchResponseMETHOD": {
+      "type": "string",
+      "enum": [
+        "CREATE",
+        "UPDATE",
+        "DELETE"
+      ],
+      "default": "CREATE"
+    },
     "protobufAny": {
       "type": "object",
       "properties": {
@@ -273,6 +309,17 @@
         "updated_at": {
           "type": "string",
           "format": "date-time"
+        }
+      }
+    },
+    "v1WatchResponse": {
+      "type": "object",
+      "properties": {
+        "method": {
+          "$ref": "#/definitions/WatchResponseMETHOD"
+        },
+        "user": {
+          "$ref": "#/definitions/v1UserResponse"
         }
       }
     }
