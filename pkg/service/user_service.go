@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"log"
 
 	"github.com/google/uuid"
 	"github.com/kroksys/user-service-example/pkg/db"
@@ -17,7 +18,9 @@ type UserService struct {
 }
 
 func (UserService) AddUser(ctx context.Context, in *pb.AddUserRequest) (*pb.UserResponse, error) {
+	log.Println("UserService:AddUser")
 	if in.Email == "" {
+		log.Println("UserService:AddUser empty email address provided")
 		return nil, status.Errorf(codes.InvalidArgument, "AddUser: email must not be empty")
 	}
 	userRec := models.User{
@@ -30,18 +33,22 @@ func (UserService) AddUser(ctx context.Context, in *pb.AddUserRequest) (*pb.User
 	}
 	err := db.CreateUser(&userRec)
 	if err != nil {
-		return nil, err
+		log.Printf("UserService:AddUser error creating user %s\n", err.Error())
+		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 	return userRec.ToUserResponse(), nil
 }
 
 func (UserService) ModifyUser(ctx context.Context, in *pb.ModifyUserRequest) (*pb.UserResponse, error) {
+	log.Println("UserService:ModifyUser")
 	// Checking id and creating user record from it
 	if in.Id == "" {
+		log.Println("UserService:ModifyUser empty id provided")
 		return nil, status.Errorf(codes.InvalidArgument, "ModifyUser: id must not be empty")
 	}
 	id, err := uuid.Parse(in.Id)
 	if err != nil {
+		log.Printf("UserService:ModifyUser could not parse id to uuid %s\n", err.Error())
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 	userRec := &models.User{ID: id}
@@ -71,6 +78,7 @@ func (UserService) ModifyUser(ctx context.Context, in *pb.ModifyUserRequest) (*p
 	// Update and handle error if exists
 	err = db.UpdateUserByMap(userRec, updateMap)
 	if err != nil {
+		log.Printf("UserService:ModifyUser error updating user %s\n", err.Error())
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
@@ -78,16 +86,20 @@ func (UserService) ModifyUser(ctx context.Context, in *pb.ModifyUserRequest) (*p
 }
 
 func (UserService) RemoveUser(ctx context.Context, in *pb.RemoveUserRequest) (*pb.RemoveUserResponse, error) {
+	log.Println("UserService:RemoveUser")
 	if in.Id == "" {
+		log.Println("UserService:RemoveUser empty id provided")
 		return nil, status.Errorf(codes.InvalidArgument, "RemoveUser: id must not be empty")
 	}
 	uid, err := uuid.Parse(in.Id)
 	if err != nil {
+		log.Printf("UserService:RemoveUser could not parse id to uuid %s\n", err.Error())
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
 	err = db.DeleteUser(uid)
 	if err != nil {
+		log.Printf("UserService:RemoveUser error deleting user %s\n", err.Error())
 		status.Errorf(codes.Internal, err.Error())
 	}
 
@@ -95,8 +107,10 @@ func (UserService) RemoveUser(ctx context.Context, in *pb.RemoveUserRequest) (*p
 }
 
 func (UserService) ListUsers(ctx context.Context, in *pb.ListUsersRequest) (*pb.ListUsersResponse, error) {
+	log.Println("UserService:ListUsers")
 	users, err := db.ListUsers(int(in.GetLimit()), int(in.GetOffset()), in.GetCountry())
 	if err != nil {
+		log.Printf("UserService:ListUsers error listing user %s\n", err.Error())
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 	result := []*pb.UserResponse{}
