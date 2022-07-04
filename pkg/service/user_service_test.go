@@ -12,9 +12,11 @@ import (
 	"github.com/kroksys/user-service-example/pkg/pb/v1"
 )
 
+var testDatabaseConnectionString = "user:userpw@tcp(localhost:3306)/users?parseTime=true"
+
 func init() {
 	// Use real database connection provided by docker-compose.
-	err := db.Connect("user:userpw@tcp(localhost:3306)/users?parseTime=true")
+	err := db.Connect(testDatabaseConnectionString)
 	if err != nil {
 		log.Fatalf("user_service_test.go: could not connect to testing database: %v", err)
 	}

@@ -12,3 +12,4 @@ desktop.ini
 # Project specific
 .mysql-data
 notes.txt
+.env
