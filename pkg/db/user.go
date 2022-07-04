@@ -13,15 +13,23 @@ func UpdateUser(u *models.User) error {
 	return DB.Save(u).Error
 }
 
+func UpdateUserByMap(u *models.User, m map[string]interface{}) error {
+	return DB.Model(u).Updates(m).Error
+}
+
 func DeleteUser(userId uuid.UUID) error {
 	return DB.Delete(&models.User{}, userId).Error
 }
 
 func ListUsers(limit, offset int, country string) ([]models.User, error) {
 	users := []models.User{}
+	if offset > 0 && limit == 0 {
+		limit = 1
+	}
 	tx := DB.Limit(limit).Offset(offset)
 	if country != "" {
 		tx.Where("country = ?", country)
 	}
-	return users, tx.Find(&users).Error
+	err := tx.Find(&users).Error
+	return users, err
 }
