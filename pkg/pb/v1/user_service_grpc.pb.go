@@ -30,7 +30,7 @@ type UserServiceClient interface {
 	// Performs a watch for the users. Each response will hold
 	// method: CREATE, UPDATE or DELETE that represents an action that
 	// have been taken for specific user data.
-	Watch(ctx context.Context, in *WatchRequest, opts ...grpc.CallOption) (*WatchResponse, error)
+	Watch(ctx context.Context, in *WatchRequest, opts ...grpc.CallOption) (UserService_WatchClient, error)
 }
 
 type userServiceClient struct {
@@ -77,13 +77,36 @@ func (c *userServiceClient) ListUsers(ctx context.Context, in *ListUsersRequest,
 	return out, nil
 }
 
-func (c *userServiceClient) Watch(ctx context.Context, in *WatchRequest, opts ...grpc.CallOption) (*WatchResponse, error) {
-	out := new(WatchResponse)
-	err := c.cc.Invoke(ctx, "/user.v1.UserService/Watch", in, out, opts...)
+func (c *userServiceClient) Watch(ctx context.Context, in *WatchRequest, opts ...grpc.CallOption) (UserService_WatchClient, error) {
+	stream, err := c.cc.NewStream(ctx, &UserService_ServiceDesc.Streams[0], "/user.v1.UserService/Watch", opts...)
 	if err != nil {
 		return nil, err
 	}
-	return out, nil
+	x := &userServiceWatchClient{stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+type UserService_WatchClient interface {
+	Recv() (*WatchResponse, error)
+	grpc.ClientStream
+}
+
+type userServiceWatchClient struct {
+	grpc.ClientStream
+}
+
+func (x *userServiceWatchClient) Recv() (*WatchResponse, error) {
+	m := new(WatchResponse)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
 }
 
 // UserServiceServer is the server API for UserService service.
@@ -102,7 +125,7 @@ type UserServiceServer interface {
 	// Performs a watch for the users. Each response will hold
 	// method: CREATE, UPDATE or DELETE that represents an action that
 	// have been taken for specific user data.
-	Watch(context.Context, *WatchRequest) (*WatchResponse, error)
+	Watch(*WatchRequest, UserService_WatchServer) error
 }
 
 // UnimplementedUserServiceServer should be embedded to have forward compatible implementations.
@@ -121,8 +144,8 @@ func (UnimplementedUserServiceServer) RemoveUser(context.Context, *RemoveUserReq
 func (UnimplementedUserServiceServer) ListUsers(context.Context, *ListUsersRequest) (*ListUsersResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListUsers not implemented")
 }
-func (UnimplementedUserServiceServer) Watch(context.Context, *WatchRequest) (*WatchResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Watch not implemented")
+func (UnimplementedUserServiceServer) Watch(*WatchRequest, UserService_WatchServer) error {
+	return status.Errorf(codes.Unimplemented, "method Watch not implemented")
 }
 
 // UnsafeUserServiceServer may be embedded to opt out of forward compatibility for this service.
@@ -208,22 +231,25 @@ func _UserService_ListUsers_Handler(srv interface{}, ctx context.Context, dec fu
 	return interceptor(ctx, in, info, handler)
 }
 
-func _UserService_Watch_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(WatchRequest)
-	if err := dec(in); err != nil {
-		return nil, err
+func _UserService_Watch_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(WatchRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
 	}
-	if interceptor == nil {
-		return srv.(UserServiceServer).Watch(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/user.v1.UserService/Watch",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(UserServiceServer).Watch(ctx, req.(*WatchRequest))
-	}
-	return interceptor(ctx, in, info, handler)
+	return srv.(UserServiceServer).Watch(m, &userServiceWatchServer{stream})
+}
+
+type UserService_WatchServer interface {
+	Send(*WatchResponse) error
+	grpc.ServerStream
+}
+
+type userServiceWatchServer struct {
+	grpc.ServerStream
+}
+
+func (x *userServiceWatchServer) Send(m *WatchResponse) error {
+	return x.ServerStream.SendMsg(m)
 }
 
 // UserService_ServiceDesc is the grpc.ServiceDesc for UserService service.
@@ -249,11 +275,13 @@ var UserService_ServiceDesc = grpc.ServiceDesc{
 			MethodName: "ListUsers",
 			Handler:    _UserService_ListUsers_Handler,
 		},
+	},
+	Streams: []grpc.StreamDesc{
 		{
-			MethodName: "Watch",
-			Handler:    _UserService_Watch_Handler,
+			StreamName:    "Watch",
+			Handler:       _UserService_Watch_Handler,
+			ServerStreams: true,
 		},
 	},
-	Streams:  []grpc.StreamDesc{},
 	Metadata: "user_service.proto",
 }

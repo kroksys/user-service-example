@@ -44,7 +44,7 @@ service UserService {
   // Performs a watch for the users. Each response will hold 
   // method: CREATE, UPDATE or DELETE that represents an action that
   // have been taken for specific user data.
-  rpc Watch(WatchRequest) returns (WatchResponse) {
+  rpc Watch(WatchRequest) returns (stream WatchResponse) {
     option (google.api.http) = {
       get: "/v1/watch"
     };
