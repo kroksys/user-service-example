@@ -1,4 +1,4 @@
-package server
+package service
 
 import (
 	"context"
@@ -47,4 +47,5 @@ func TestServer(t *testing.T) {
 	if resp.Status != healthpb.HealthCheckResponse_SERVING {
 		t.Errorf("TestServer: healthchek service responded with a status other than SERVING. Got status: %s", resp.Status.String())
 	}
+
 }

@@ -1,4 +1,4 @@
-package server
+package service
 
 import (
 	"context"
@@ -8,9 +8,9 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/go-redis/redis/v8"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/kroksys/user-service-example/pkg/pb/v1"
-	"github.com/kroksys/user-service-example/pkg/service"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/health"
@@ -29,8 +29,16 @@ func StartGrpcServer(ctx context.Context, addr string) (*grpc.Server, error) {
 
 	server := grpc.NewServer()
 
+	// Connect to redis server
+	redisClient, err := connectToRedis()
+	if err != nil {
+		return nil, fmt.Errorf("failed to connect to redis server: %v", err)
+	}
+
 	// Register user service
-	pb.RegisterUserServiceServer(server, service.UserService{})
+	pb.RegisterUserServiceServer(server, UserService{
+		Redis: redisClient,
+	})
 
 	// Register healthckech service and setting status to serving
 	healthServer := health.NewServer()
@@ -42,6 +50,7 @@ func StartGrpcServer(ctx context.Context, addr string) (*grpc.Server, error) {
 		if err := server.Serve(lis); err != nil {
 			log.Printf("grpc server stopped with error: %v\n", err)
 		}
+		redisClient.Close()
 	}()
 
 	return server, nil
@@ -85,4 +94,18 @@ func StartHTTPServer(ctx context.Context, addr, grpcAddr string) (*http.Server, 
 	}()
 
 	return srv, nil
+}
+
+// Connects to local redis server
+func connectToRedis() (*redis.Client, error) {
+	rdb := redis.NewClient(&redis.Options{
+		Addr:    "localhost:6379",
+		DB:      0,
+		Network: "tcp",
+	})
+	_, err := rdb.Ping(context.Background()).Result()
+	if err != nil {
+		return nil, err
+	}
+	return rdb, nil
 }

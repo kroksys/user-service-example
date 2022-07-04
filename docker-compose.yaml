@@ -17,3 +17,7 @@ services:
       MYSQL_PASSWORD: userpw
     ports:
       - 3306:3306
+  redis:
+    image: "redis:alpine"
+    ports:
+      - 6379:6379

@@ -2,14 +2,15 @@ package service
 
 import (
 	"context"
-	"errors"
+	"io"
 	"log"
 	"testing"
+	"time"
 
-	"github.com/go-sql-driver/mysql"
 	"github.com/kroksys/user-service-example/pkg/db"
 	"github.com/kroksys/user-service-example/pkg/models"
 	"github.com/kroksys/user-service-example/pkg/pb/v1"
+	"google.golang.org/grpc"
 )
 
 var testDatabaseConnectionString = "user:userpw@tcp(localhost:3306)/users?parseTime=true"
@@ -60,9 +61,6 @@ func TestAddUser(t *testing.T) {
 	_, err = s.AddUser(context.Background(), req)
 	if err == nil {
 		t.Errorf("TestAddUser(%s) adding email second time expected to receive an 'Duplicate entry' error. Got: nil", testEmail)
-	}
-	if !isDuplicateEntryErr(err) {
-		t.Errorf("TestAddUser(%s) adding email second time expected to receive an 'Duplicate entry' error. Got: %v", testEmail, err)
 	}
 }
 
@@ -189,6 +187,65 @@ func TestListUsers(t *testing.T) {
 	}
 }
 
+func TestWatch(t *testing.T) {
+	// Start a server
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	grpcServer, err := StartGrpcServer(ctx, grpcAddr)
+	if err != nil {
+		t.Fatalf("Error starting GRPC server: %v\n", err)
+	}
+	defer grpcServer.GracefulStop()
+
+	// Connection for the client
+	conn, err := grpc.Dial(grpcAddr, grpc.WithInsecure())
+	if err != nil {
+		t.Fatalf("TestServer could not create grpc client: %v", err)
+	}
+	defer conn.Close()
+
+	client := pb.NewUserServiceClient(conn)
+
+	// Send commands to server [Add, Modify and Remove]
+	go func() {
+		time.Sleep(time.Millisecond * 200)
+		userRec, err := client.AddUser(context.Background(), &pb.AddUserRequest{Email: "another@email.com"})
+		if err != nil {
+			grpcServer.GracefulStop()
+			log.Fatalf("TestWatch could not create a user, %v", err)
+		}
+		client.ModifyUser(context.Background(), &pb.ModifyUserRequest{
+			Id:        userRec.Id,
+			FirstName: stringPtr("John"),
+		})
+		client.RemoveUser(context.Background(), &pb.RemoveUserRequest{
+			Id: userRec.Id,
+		})
+	}()
+
+	// Get stream handler
+	stream, err := client.Watch(context.Background(), &pb.WatchRequest{})
+	if err != nil {
+		t.Fatalf("TestWatch could not watch users: %v", err)
+	}
+
+	// Handle stream
+	for {
+		msg, err := stream.Recv()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			t.Fatalf("TestServer error while reading stream: %v", err)
+		}
+
+		if msg.Method == pb.WatchResponse_DELETE {
+			break
+		}
+	}
+}
+
 func populateDatabase(s UserService) {
 	s.AddUser(context.Background(), &pb.AddUserRequest{Email: "john1@email.com", Country: "AU"})
 	s.AddUser(context.Background(), &pb.AddUserRequest{Email: "john2@email.com", Country: "AU"})
@@ -197,15 +254,6 @@ func populateDatabase(s UserService) {
 	s.AddUser(context.Background(), &pb.AddUserRequest{Email: "john5@email.com", Country: "NZ"})
 	s.AddUser(context.Background(), &pb.AddUserRequest{Email: "john6@email.com", Country: "NZ"})
 	s.AddUser(context.Background(), &pb.AddUserRequest{Email: "john7@email.com", Country: "IT"})
-}
-
-// Check if error is 'Diplicate entry' mysql error
-func isDuplicateEntryErr(err error) bool {
-	var mysqlErr *mysql.MySQLError
-	if !errors.As(err, &mysqlErr) {
-		return false
-	}
-	return mysqlErr.Number == 1062
 }
 
 // Converts string to string ponter

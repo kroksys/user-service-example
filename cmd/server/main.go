@@ -6,7 +6,7 @@ import (
 	"os"
 
 	"github.com/kroksys/user-service-example/pkg/db"
-	"github.com/kroksys/user-service-example/pkg/server"
+	"github.com/kroksys/user-service-example/pkg/service"
 )
 
 var (
@@ -51,7 +51,7 @@ func main() {
 
 	// Start grpc server
 	log.Printf("Starting gRPC server with addr: %s\n", grpcAddr)
-	grpcServer, err := server.StartGrpcServer(ctx, grpcAddr)
+	grpcServer, err := service.StartGrpcServer(ctx, grpcAddr)
 	if err != nil {
 		log.Fatalf("Error starting GRPC server: %v\n", err)
 	}
@@ -59,7 +59,7 @@ func main() {
 
 	// Start HTTP server
 	log.Printf("Starting HTTP server with addr: %s\n", apiAddr)
-	httpServer, err := server.StartHTTPServer(ctx, apiAddr, grpcAddr)
+	httpServer, err := service.StartHTTPServer(ctx, apiAddr, grpcAddr)
 	if err != nil {
 		log.Fatalf("Error starting HTTP server: %v\n", err)
 	}
