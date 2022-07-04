@@ -4,6 +4,8 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/kroksys/user-service-example/pkg/pb/v1"
+	"google.golang.org/protobuf/types/known/timestamppb"
 	"gorm.io/gorm"
 )
 
@@ -17,6 +19,20 @@ type User struct {
 	Country   string
 	CreatedAt time.Time
 	UpdatedAt time.Time
+}
+
+func (u *User) ToUserResponse() *pb.UserResponse {
+	return &pb.UserResponse{
+		Id:        u.ID.String(),
+		FirstName: u.FirstName,
+		LastName:  u.LastName,
+		Nickname:  u.Nickname,
+		Password:  u.Password,
+		Email:     u.Email,
+		Country:   u.Country,
+		CreatedAt: timestamppb.New(u.CreatedAt),
+		UpdatedAt: timestamppb.New(u.UpdatedAt),
+	}
 }
 
 // Gorm before create hook is executed before DB.Create()
