@@ -27,6 +27,8 @@ services:
     build: .
     environment:
       USERSERVICE_CONNECTION_STRING: "user:userpw@tcp(db)/users?parseTime=true"
+      # Separate env for test database connection. In this case same connection.
+      USERSERVICE_TEST_CONNECTION_STRING: "user:userpw@tcp(db)/users?parseTime=true"
       USERSERVICE_REDIS_HOST: "redis:6379"
       USERSERVICE_GRPC_ADDR: "0.0.0.0:9000"
       USERSERVICE_HTTP_ADDR: "0.0.0.0:9001"

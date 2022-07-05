@@ -4,6 +4,7 @@ import (
 	"context"
 	"io"
 	"log"
+	"os"
 	"testing"
 	"time"
 
@@ -13,10 +14,12 @@ import (
 	"google.golang.org/grpc"
 )
 
-var testDatabaseConnectionString = "user:userpw@tcp(localhost:3306)/users?parseTime=true"
-
 func init() {
 	// Use real database connection provided by docker-compose.
+	testDatabaseConnectionString := "user:userpw@tcp(localhost:3306)/users?parseTime=true"
+	if os.Getenv("USERSERVICE_TEST_CONNECTION_STRING") != "" {
+		testDatabaseConnectionString = os.Getenv("USERSERVICE_TEST_CONNECTION_STRING")
+	}
 	err := db.Connect(testDatabaseConnectionString)
 	if err != nil {
 		log.Fatalf("user_service_test.go: could not connect to testing database: %v", err)
