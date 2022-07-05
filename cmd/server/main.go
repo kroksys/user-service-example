@@ -36,6 +36,7 @@ func main() {
 	// Connect to database
 	err := db.Connect(connectionString)
 	if err != nil {
+		log.Printf("connectionString: %s\n", connectionString)
 		log.Fatalf("Error connecting to database: %s\n", err.Error())
 	}
 

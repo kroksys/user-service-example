@@ -5,6 +5,7 @@ services:
   db:
     # Since I'm using Apple silicon M1 chip I need arm/v8 build. 
     # mysql:8-oracle has arm64/v8 build so I chose this one.
+    # feel free to use just mysql:8 image without platform specification
     image: mysql:8-oracle
     platform: linux/arm64/v8
     restart: always
@@ -21,3 +22,17 @@ services:
     image: "redis:alpine"
     ports:
       - 6379:6379
+  user-service:
+    restart: always
+    build: .
+    environment:
+      USERSERVICE_CONNECTION_STRING: "user:userpw@tcp(db)/users?parseTime=true"
+      USERSERVICE_REDIS_HOST: "redis:6379"
+      USERSERVICE_GRPC_ADDR: "0.0.0.0:9000"
+      USERSERVICE_HTTP_ADDR: "0.0.0.0:9001"
+    depends_on:
+      - db
+      - redis
+    ports:
+      - 9000:9000
+      - 9001:9001

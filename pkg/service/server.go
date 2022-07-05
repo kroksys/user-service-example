@@ -6,6 +6,7 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"os"
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-redis/redis/v8"
@@ -98,8 +99,13 @@ func StartHTTPServer(ctx context.Context, addr, grpcAddr string) (*http.Server, 
 
 // Connects to local redis server
 func connectToRedis() (*redis.Client, error) {
+	redisAddr := "localhost:6379"
+	if os.Getenv("USERSERVICE_REDIS_HOST") != "" {
+		redisAddr = os.Getenv("USERSERVICE_REDIS_HOST")
+	}
+
 	rdb := redis.NewClient(&redis.Options{
-		Addr:    "localhost:6379",
+		Addr:    redisAddr,
 		DB:      0,
 		Network: "tcp",
 	})
